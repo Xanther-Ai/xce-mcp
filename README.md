@@ -1,7 +1,7 @@
 # Xanther Context Engine (XCE) — MCP Server
 
 <p align="center">
-  <img src="assets/xce-banner.png" alt="Xanther Context Engine" width="700" />
+  <img src="assets/xce-hero.png" alt="Xanther Context Engine" width="700" />
 </p>
 
 <p align="center">
@@ -29,6 +29,10 @@ Xanther Context Engine (XCE) is an MCP server that gives your coding agent preci
 Powered by the **PRAT** (Persistent Recursive Abstract Tree) algorithm.
 
 ## Benchmark Results
+
+<p align="center">
+  <img src="assets/xce-benchmarks.png" alt="XCE Benchmark Results on SWE-bench Verified" width="700" />
+</p>
 
 All results on [SWE-bench Verified](https://www.swebench.com/) using mini-swe-agent:
 
@@ -152,6 +156,10 @@ Changed files: ["src/auth/middleware.py", "src/auth/tokens.py"]
 The agent doesn't need to read hundreds of files to understand your codebase. XCE gives it the right context instantly.
 
 ## Supported Agents
+
+<p align="center">
+  <img src="assets/xce-integrations.png" alt="Works with Claude Code, Kiro, Cursor, OpenCode, Windsurf" width="700" />
+</p>
 
 | Agent | Status | Config Location |
 |---|---|---|
