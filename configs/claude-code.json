@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "xanther": {
+      "url": "https://mcp.xanther.ai/sse",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
