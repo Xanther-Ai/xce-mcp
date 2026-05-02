@@ -1,0 +1,9 @@
+Always use xanther-xce MCP tools for codebase understanding before reading files directly.
+
+- Call xce_get_context as your first action on any task
+- Use xce_architecture_context before modifying any file to understand its role and dependencies
+- Use xce_impact_analysis before making changes that affect multiple files
+- Use xce_search to find code by meaning instead of grep/find
+- Use xce_trace to understand how a function connects to the broader architecture
+
+Prefer XCE context over file reading for understanding code structure. XCE provides architectural context (HLD, LLD, call graphs) that file reading alone cannot.
