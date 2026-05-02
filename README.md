@@ -98,6 +98,95 @@ Add this to your MCP configuration:
 
 That's it. Your agent now has access to XCE tools on every interaction.
 
+### 4. Add steering rules (recommended)
+
+To make your agent **always** use XCE for context queries (instead of reading files blindly), add a steering/rules file to your project. This tells the agent to call XCE first on every task.
+
+#### Kiro — `.kiro/steering/xce.md`
+
+```markdown
+---
+inclusion: auto
+---
+Always use the xanther-xce MCP tools for codebase understanding before reading files directly.
+
+- Call `xce_get_context` as your FIRST step when starting any task. It combines search, architecture context, and tracing into one call.
+- Use `xce_architecture_context` before modifying any file to understand its role, dependencies, and what calls it.
+- Use `xce_impact_analysis` before making changes that affect multiple files to understand downstream effects.
+- Use `xce_search` to find code by meaning when you need to locate specific functionality.
+- Use `xce_trace` to understand how a function connects to the broader architecture.
+
+Prefer XCE context over grep, find, or reading files for understanding code structure. XCE provides architectural context that file reading alone cannot.
+```
+
+#### Claude Code — `CLAUDE.md` (project root)
+
+```markdown
+## Codebase Context
+
+This project uses Xanther Context Engine (XCE) via MCP for codebase understanding.
+
+Always use xanther-xce MCP tools before reading files:
+- Call `xce_get_context` first on any task — it returns architecture, code locations, and relationships
+- Use `xce_architecture_context` before modifying any file
+- Use `xce_impact_analysis` before multi-file changes
+- Use `xce_search` to find code by meaning instead of grep
+- Use `xce_trace` to understand how code connects to the broader architecture
+
+XCE provides HLD (high-level design), LLD (low-level design), call graphs, and component descriptions. This is faster and more accurate than reading files individually.
+```
+
+#### Cursor — `.cursorrules` (project root)
+
+```
+Always use xanther-xce MCP tools for codebase understanding before reading files directly.
+
+- Call xce_get_context as your first action on any task
+- Use xce_architecture_context before modifying any file to understand its role and dependencies
+- Use xce_impact_analysis before making changes that affect multiple files
+- Use xce_search to find code by meaning instead of grep/find
+- Use xce_trace to understand how a function connects to the broader architecture
+
+Prefer XCE context over file reading for understanding code structure. XCE provides architectural context (HLD, LLD, call graphs) that file reading alone cannot.
+```
+
+#### Windsurf — `.windsurfrules` (project root)
+
+```
+Always use xanther-xce MCP tools for codebase understanding before reading files directly.
+
+- Call xce_get_context as your first action on any task
+- Use xce_architecture_context before modifying any file
+- Use xce_impact_analysis before multi-file changes
+- Use xce_search to find code by meaning
+- Use xce_trace to understand architectural relationships
+
+XCE provides HLD, LLD, call graphs, and component descriptions — faster and more accurate than reading files individually.
+```
+
+#### OpenCode — Add to system prompt or project config
+
+```
+Always use xanther-xce MCP tools for codebase understanding before reading files.
+Call xce_get_context first on any task. Use xce_architecture_context before modifying code.
+Use xce_impact_analysis before multi-file changes. Use xce_search instead of grep.
+```
+
+#### Cline — `.clinerules` (project root)
+
+```
+Always use xanther-xce MCP tools for codebase understanding before reading files directly.
+
+- Call xce_get_context as your first action on any task
+- Use xce_architecture_context before modifying any file to understand its role and dependencies
+- Use xce_impact_analysis before making changes that affect multiple files
+- Use xce_search to find code by meaning instead of grep/find
+
+XCE provides architectural context (HLD, LLD, call graphs, component descriptions) that is faster and more accurate than reading files individually.
+```
+
+> **Why steering matters:** Without steering, the agent may use XCE sometimes but still fall back to reading files directly. With steering, the agent consistently uses XCE first, resulting in better context and fewer wasted tokens. Our benchmarks show ~20% token reduction when the agent uses XCE proactively.
+
 ## Available Tools
 
 ### `xce_search`
@@ -174,7 +263,7 @@ The agent doesn't need to read hundreds of files to understand your codebase. XC
 
 | Plan | Queries/month | Repos | Price |
 |---|---|---|---|
-| Free | 100 | 2 | $0 |
+| Free | 100 | 3 | $0 |
 | Starter | 2,000 | 5 | $8/mo |
 | Pro | 10,000 | 20 | $15/mo |
 | Unlimited | Unlimited | Unlimited | $20/mo |
