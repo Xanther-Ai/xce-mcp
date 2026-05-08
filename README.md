@@ -11,8 +11,9 @@
 <p align="center">
   <a href="https://xanther.ai">Website</a> •
   <a href="https://app.xanther.ai">Dashboard</a> •
-  <a href="https://discord.gg/Y768kBRS">Discord</a> •
-  <a href="https://github.com/Xanther-Ai/xanther-cli">Xanther CLI</a>
+  <a href="https://discord.gg/YaBekKpR">Discord</a> •
+  <a href="https://www.npmjs.com/package/xanther-cli">npm</a> •
+  <a href="https://x.com/xantherai">Twitter</a>
 </p>
 
 ---
@@ -30,48 +31,46 @@ Powered by the **PRAT** (Persistent Recursive Abstract Tree) algorithm.
 
 ## Benchmark Results
 
-<p align="center">
-  <img src="assets/xce-benchmarks.png" alt="XCE Benchmark Results on SWE-bench Verified" width="700" />
-</p>
+All results on [SWE-bench Verified](https://www.swebench.com/) (500 instances) using mini-swe-agent:
 
-All results on [SWE-bench Verified](https://www.swebench.com/) using mini-swe-agent:
+| Setup | Resolve Rate | Cost/Instance |
+|---|---|---|
+| **MiniMax M2.5 + XCE** | **78.2%** | $0.22 |
+| Claude 4.5 Opus (baseline) | 76.8% | $0.75 |
+| MiniMax M2.5 (baseline) | 75.8% | $0.07 |
+| **Sonnet 4.0 + XCE** | **73.4%** | $0.22 |
+| Sonnet 4.0 (baseline) | 66.0% | $0.22 |
 
-| Setup | Resolve Rate |
-|---|---|
-| Sonnet 4.0 (baseline) | 66.0% |
-| **Sonnet 4.0 + XCE** | **73.4%** |
-| Sonnet 4.0 + XCE (cascade hybrid) | 76.8% |
-| MiniMax M2.5 (baseline) | 75.8% |
-| **MiniMax M2.5 + XCE** | **78.2%** |
-
-An older-generation model (Sonnet 4.0) with XCE beats raw Sonnet 4.6 and reaches Opus-level performance — at 16x lower cost.
+78.2% is a direct result (not oracle). Full data: [github.com/Xanther-Ai/xce-benchmarks](https://github.com/Xanther-Ai/xce-benchmarks)
 
 ## Quick Start
 
 ### 1. Get your API key
 
-Sign up at [xanther.ai/signup](https://xanther.ai/signup) and generate an API key from the [dashboard](https://app.xanther.ai).
+Sign up at [app.xanther.ai](https://app.xanther.ai) and generate an API key from the dashboard.
 
 ### 2. Index your repository
-
-Use the [Xanther CLI](https://github.com/Xanther-Ai/xanther-cli) to index your codebase:
 
 ```bash
 npx xanther-cli init --api-key xce_your_key_here
 ```
 
-### 3. Add to your MCP config
+The CLI will:
+- Check if your repo is already indexed (community repos are pre-indexed)
+- Submit your repo for indexing if needed
+- Output the MCP config with your `repo_id` embedded in the URL
+- Install a git post-commit hook for auto-sync
+- Generate steering files for your IDE
 
+### 3. Add MCP config to your IDE
 
-#### Claude Code / Kiro / Cursor / Windsurf
-
-Add this to your MCP configuration:
+The CLI outputs this after indexing. Copy it into your IDE's MCP config file:
 
 ```json
 {
   "mcpServers": {
-    "xanther": {
-      "url": "https://mcp.xanther.ai/sse",
+    "xanther-xce": {
+      "url": "https://mcp.xanther.ai/sse?repo_id=YOUR_REPO_ID",
       "headers": {
         "Authorization": "Bearer YOUR_API_KEY"
       }
@@ -80,27 +79,22 @@ Add this to your MCP configuration:
 }
 ```
 
-#### OpenCode
+**The `repo_id` parameter** tells XCE which indexed codebase to serve context from. It's embedded in the URL so your agent automatically targets the right repo without any extra configuration.
 
-```json
-{
-  "mcpServers": {
-    "xanther": {
-      "type": "sse",
-      "url": "https://mcp.xanther.ai/sse",
-      "headers": {
-        "Authorization": "Bearer YOUR_API_KEY"
-      }
-    }
-  }
-}
-```
-
-That's it. Your agent now has access to XCE tools on every interaction.
+| IDE | Config File Location |
+|---|---|
+| Kiro | `.kiro/settings/mcp.json` |
+| Claude Code | `~/.claude/mcp.json` |
+| Cursor | `.cursor/mcp.json` |
+| Windsurf | `.windsurf/mcp.json` |
+| OpenCode | `~/.config/opencode/config.json` |
+| Cline | `.vscode/mcp.json` |
 
 ### 4. Add steering rules (recommended)
 
-To make your agent **always** use XCE for context queries (instead of reading files blindly), add a steering/rules file to your project. This tells the agent to call XCE first on every task.
+Steering files tell your agent to **always** use XCE for context queries instead of reading files blindly. Without steering, the agent may fall back to manual file exploration. With steering, it consistently uses XCE first — resulting in ~20% fewer tokens and better results.
+
+The CLI generates these automatically during `xanther-cli init`. You can also create them manually:
 
 #### Kiro — `.kiro/steering/xce.md`
 
@@ -164,14 +158,6 @@ Always use xanther-xce MCP tools for codebase understanding before reading files
 XCE provides HLD, LLD, call graphs, and component descriptions — faster and more accurate than reading files individually.
 ```
 
-#### OpenCode — Add to system prompt or project config
-
-```
-Always use xanther-xce MCP tools for codebase understanding before reading files.
-Call xce_get_context first on any task. Use xce_architecture_context before modifying code.
-Use xce_impact_analysis before multi-file changes. Use xce_search instead of grep.
-```
-
 #### Cline — `.clinerules` (project root)
 
 ```
@@ -185,36 +171,54 @@ Always use xanther-xce MCP tools for codebase understanding before reading files
 XCE provides architectural context (HLD, LLD, call graphs, component descriptions) that is faster and more accurate than reading files individually.
 ```
 
-> **Why steering matters:** Without steering, the agent may use XCE sometimes but still fall back to reading files directly. With steering, the agent consistently uses XCE first, resulting in better context and fewer wasted tokens. Our benchmarks show ~20% token reduction when the agent uses XCE proactively.
+#### OpenCode — Add to system prompt or project config
+
+```
+Always use xanther-xce MCP tools for codebase understanding before reading files.
+Call xce_get_context first on any task. Use xce_architecture_context before modifying code.
+Use xce_impact_analysis before multi-file changes. Use xce_search instead of grep.
+```
 
 ## Available Tools
+
+Your agent gets access to these five tools via MCP:
+
+### `xce_get_context`
+
+**The most powerful tool.** Give it a natural language description of what you're working on, and it returns full architectural context — relevant code, design docs, call graphs, and related components.
+
+```
+Input:  "Fix the race condition in FileBasedCache concurrent writes"
+Output: HLD module info, LLD component details, call graph, related files, code snippets
+```
+
+Use this as your **first tool call** when starting any task.
 
 ### `xce_search`
 
 Semantic search across your indexed codebase. Finds code by meaning, not just text.
 
 ```
-Query: "authentication middleware that validates JWT tokens"
-→ Returns: matching functions, classes, and their architectural context
+Input:  "authentication middleware that validates JWT tokens"
+Output: Matching functions, classes, and their architectural context
 ```
 
 ### `xce_architecture_context`
 
-Get the full architectural context for any file or symbol — component description, low-level design, high-level design, and relationships.
+Get the full architectural context for any file or symbol — what it does, how it connects to other parts, its HLD module and LLD component.
 
 ```
-File: "src/auth/middleware.py"
-→ Returns: what it does, how it fits in the architecture, what depends on it
+Input:  "django/middleware/csrf.py"
+Output: Component description, callers, dependencies, design role
 ```
 
 ### `xce_trace`
 
-Trace a symbol from code-level up to module-level architecture. Understand how a function connects to the broader system.
+Trace relationships from code to design artifacts. Understand how a specific function connects to the broader architecture.
 
 ```
-Source: "validate_token"
-Target: "hld"
-→ Returns: function → class → module → architectural role
+Input:  source="validate_token", target_level="hld"
+Output: Function → class → module → architectural role
 ```
 
 ### `xce_impact_analysis`
@@ -222,42 +226,76 @@ Target: "hld"
 Analyze the impact of changing specific files. Know what breaks before you break it.
 
 ```
-Changed files: ["src/auth/middleware.py", "src/auth/tokens.py"]
-→ Returns: affected modules, downstream dependencies, risk assessment
+Input:  changed_files=["src/auth/middleware.py", "src/auth/tokens.py"]
+Output: Affected modules, downstream dependencies, risk assessment
+```
+
+## Community Repos (Free)
+
+These repos are pre-indexed and available to all users with any API key:
+
+| Repository | repo_id | Nodes | Language |
+|---|---|---|---|
+| django/django | `django-django` | 14,520 | Python |
+| lobehub/lobe-chat | `community--lobe-chat` | 92,139 | TypeScript |
+| sympy/sympy | `community--sympy` | 8,450 | Python |
+| scikit-learn/scikit-learn | `community--scikit-learn` | 6,200 | Python |
+| matplotlib/matplotlib | `community--matplotlib` | 5,800 | Python |
+| sphinx-doc/sphinx | `community--sphinx` | 4,100 | Python |
+| pytest-dev/pytest | `community--pytest` | 3,200 | Python |
+| pydata/xarray | `community--xarray` | 2,800 | Python |
+| astropy/astropy | `community--astropy` | 3,500 | Python |
+| pallets/flask | `community--flask` | 3,280 | Python |
+
+To query a community repo, use its `repo_id` in the URL:
+
+```json
+{
+  "mcpServers": {
+    "xanther-xce": {
+      "url": "https://mcp.xanther.ai/sse?repo_id=django-django",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
 ```
 
 ## How It Works
 
 ```
-┌─────────────────┐     MCP      ┌─────────────────┐
-│  Coding Agent   │◄────────────►│   XCE Server    │
-│  (Claude Code,  │              │                 │
-│   Kiro, Cursor) │              │  PRAT Algorithm │
-└─────────────────┘              │  + Graph Store  │
-                                 └─────────────────┘
+┌─────────────────┐     MCP/SSE    ┌─────────────────┐
+│  Coding Agent   │◄──────────────►│   XCE Server    │
+│  (Claude Code,  │                │                 │
+│   Kiro, Cursor, │                │  PRAT Algorithm │
+│   Windsurf,     │                │  + Structured   │
+│   OpenCode,     │                │    Index        │
+│   Cline)        │                │                 │
+└─────────────────┘                └─────────────────┘
+         │                                  │
+         │ repo_id in URL                   │ Indexed codebase
+         │ API key in header                │ (architecture + code + embeddings)
+         ▼                                  ▼
+   Agent gets precise              Your repo indexed via
+   architectural context           xanther-cli or dashboard
 ```
 
-1. **Index** — Xanther CLI or GitHub App indexes your repo into a knowledge graph
-2. **Connect** — Add the MCP config to your coding agent
-3. **Query** — Your agent automatically calls XCE tools when it needs codebase context
+1. **Index** — `xanther-cli init` indexes your repo into a structured codebase index
+2. **Connect** — Add the MCP config (with repo_id) to your coding agent
+3. **Query** — Your agent calls XCE tools when it needs codebase context
 4. **Context** — XCE returns precise architectural context, not just raw code
 
-The agent doesn't need to read hundreds of files to understand your codebase. XCE gives it the right context instantly.
+## Supported Languages
 
-## Supported Agents
-
-<p align="center">
-  <img src="assets/xce-integrations.png" alt="Works with Claude Code, Kiro, Cursor, OpenCode, Windsurf" width="700" />
-</p>
-
-| Agent | Status | Config Location |
+| Language | Parser | Status |
 |---|---|---|
-| Claude Code | Supported | `~/.claude/mcp.json` |
-| Kiro | Supported | `.kiro/settings/mcp.json` |
-| Cursor | Supported | `.cursor/mcp.json` |
-| Windsurf | Supported | `.windsurf/mcp.json` |
-| OpenCode | Supported | `~/.config/opencode/config.json` |
-| Any MCP client | Supported | Varies |
+| Python | AST (built-in) | Stable |
+| TypeScript | tree-sitter | Stable |
+| JavaScript | tree-sitter | Stable |
+| TSX/JSX | tree-sitter | Stable |
+
+More languages coming soon. Request in [Discord](https://discord.gg/YaBekKpR).
 
 ## Pricing
 
@@ -268,15 +306,18 @@ The agent doesn't need to read hundreds of files to understand your codebase. XC
 | Pro | 10,000 | 20 | $15/mo |
 | Unlimited | Unlimited | Unlimited | $20/mo |
 
-[View pricing →](https://xanther.ai/pricing)
+[View pricing](https://xanther.ai/pricing)
 
 ## Links
 
 - [Xanther Website](https://xanther.ai)
 - [Dashboard](https://app.xanther.ai)
-- [Xanther CLI](https://github.com/Xanther-Ai/xanther-cli)
-- [Discord Community](https://discord.gg/Y768kBRS)
+- [Xanther CLI (npm)](https://www.npmjs.com/package/xanther-cli)
+- [Xanther CLI (GitHub)](https://github.com/Xanther-Ai/xanther-cli)
+- [Discord Community](https://discord.gg/YaBekKpR)
+- [Twitter](https://x.com/xantherai)
 - [Benchmark Results](https://xanther.ai/benchmarks)
+- [Benchmark Data (GitHub)](https://github.com/Xanther-Ai/xce-benchmarks)
 
 ## License
 
